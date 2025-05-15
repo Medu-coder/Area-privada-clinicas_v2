@@ -1,3 +1,5 @@
+"use client";
+import React, { useState } from 'react'
 import { Calendar, Download, FileText, Bell, Clock, Upload } from "lucide-react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -50,6 +52,12 @@ interface PatientDashboardProps {
 }
 
 export function PatientDashboard({ patient }: PatientDashboardProps) {
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleAppointmentCreated = () => {
+    setRefreshKey(prev => prev + 1);
+  };
+
   return (
     <div className="grid gap-6">
       <Card className="border-none shadow-sm bg-white">
@@ -68,11 +76,11 @@ export function PatientDashboard({ patient }: PatientDashboardProps) {
           </CardHeader>
           <CardContent className="pb-2">
             <div className="grid gap-4">
-              <AppointmentsList />
+              <AppointmentsList key={refreshKey} />
             </div>
           </CardContent>
           <CardFooter>
-            <SolicitarCitaDialog />
+            <SolicitarCitaDialog onCreated={handleAppointmentCreated} />
           </CardFooter>
         </Card>
 

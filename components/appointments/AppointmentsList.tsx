@@ -1,10 +1,12 @@
 'use client'
 
+import { format } from 'date-fns'
+import { ModificarCitaDialog } from './ModificarCitaDialog'
+import { SolicitarCitaDialog } from './SolicitarCitaDialog'
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { supabase } from '@/lib/supabaseClient'
 import { Loader2, MoreVertical } from 'lucide-react'
-import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import {
   DropdownMenu,
@@ -25,28 +27,32 @@ export function AppointmentsList() {
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const fetchAppointments = async () => {
-      setLoading(true)
+  const fetchAppointments = async () => {
+    setLoading(true)
 
-      const { data, error } = await supabase
-        .from('appointments')
-        .select('*')
-        .eq('user_id', DUMMY_USER_ID)
-        .in('status', ['pendiente', 'confirmada'])
-        .order('date', { ascending: true })
+    const { data, error } = await supabase
+      .from('appointments')
+      .select('*')
+      .eq('user_id', DUMMY_USER_ID)
+      .in('status', ['pendiente', 'confirmada'])
+      .order('date', { ascending: true })
 
-      if (error) {
-        console.error('Error al obtener citas:', error)
-      }
+    // Debug logs para inspeccionar la respuesta de Supabase
+    console.log('📥 Cargando citas para:', DUMMY_USER_ID)
+    console.log('📦 Resultado:', { data, error })
 
-      if (data) {
-        setAppointments(data)
-      }
-
-      setLoading(false)
+    if (error) {
+      console.error('Error al obtener citas:', error)
     }
 
+    if (data) {
+      setAppointments(data)
+    }
+
+    setLoading(false)
+  }
+
+  useEffect(() => {
     fetchAppointments()
   }, [])
 
@@ -91,49 +97,54 @@ export function AppointmentsList() {
     )
   }
 
-  if (appointments.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground text-center">
-        No tienes citas activas.
-      </p>
-    )
-  }
-
   return (
-    <div className="space-y-4">
-      {appointments.map((appt) => (
-        <Card key={appt.id}>
-          <CardHeader className="flex flex-row items-start justify-between">
-            <div>
-              <CardTitle>
-                {format(new Date(appt.date), "EEEE d 'de' MMMM, HH:mm", { locale: es })}
-              </CardTitle>
-            </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="text-muted-foreground hover:text-foreground">
-                  <MoreVertical className="w-5 h-5" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => console.log('Modificar cita:', appt.id)}>
-                  Modificar cita
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-destructive"
-                  onSelect={() => handleCancel(appt)}
-                >
-                  Cancelar cita
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm mb-2">Motivo: {appt.reason}</p>
-            <p className="text-xs text-muted-foreground capitalize">Estado: {appt.status}</p>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
+    <>
+      {appointments.length === 0 ? (
+        <p className="text-sm text-muted-foreground text-center">
+          No tienes citas activas.
+        </p>
+      ) : (
+        <div className="space-y-4">
+          {appointments.map((appt) => (
+            <Card key={appt.id}>
+              <CardHeader className="flex flex-row items-start justify-between">
+                <div>
+                  <CardTitle>
+                    {format(new Date(appt.date), "EEEE d 'de' MMMM, HH:mm", { locale: es })}
+                  </CardTitle>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="text-muted-foreground hover:text-foreground">
+                      <MoreVertical className="w-5 h-5" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                      <ModificarCitaDialog
+                        appointmentId={appt.id}
+                        currentDate={appt.date}
+                        currentReason={appt.reason}
+                        onUpdated={() => setAppointments((prev) => prev.filter((a) => a.id !== appt.id))}
+                      />
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-destructive"
+                      onSelect={() => handleCancel(appt)}
+                    >
+                      Cancelar cita
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm mb-2">Motivo: {appt.reason}</p>
+                <p className="text-xs text-muted-foreground capitalize">Estado: {appt.status}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </>
   )
 }
