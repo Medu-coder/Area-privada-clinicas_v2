@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { DashboardShell } from "@/components/dashboard-shell"
 import { PatientDashboard } from "@/components/patient-dashboard"
+import { SolicitarCitaDialog } from '@/components/appointments/SolicitarCitaDialog'
 
 // Simulación de autenticación - en producción usaría NextAuth o similar
 const isAuthenticated = true

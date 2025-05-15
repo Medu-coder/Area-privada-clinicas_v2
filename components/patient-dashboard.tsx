@@ -6,6 +6,8 @@ import { TreatmentCard } from "@/components/treatment-card"
 import { ReminderCard } from "@/components/reminder-card"
 import { DocumentCard } from "@/components/document-card"
 import { InvoiceCard } from "@/components/invoice-card"
+import { SolicitarCitaDialog } from '@/components/appointments/SolicitarCitaDialog'
+import { AppointmentsList } from '@/components/appointments/AppointmentsList'
 
 interface Patient {
   name: string
@@ -66,15 +68,11 @@ export function PatientDashboard({ patient }: PatientDashboardProps) {
           </CardHeader>
           <CardContent className="pb-2">
             <div className="grid gap-4">
-              {patient.appointments.map((appointment) => (
-                <AppointmentCard key={appointment.id} appointment={appointment} />
-              ))}
+              <AppointmentsList />
             </div>
           </CardContent>
           <CardFooter>
-            <Button variant="outline" className="w-full">
-              Solicitar nueva cita
-            </Button>
+            <SolicitarCitaDialog />
           </CardFooter>
         </Card>
 
