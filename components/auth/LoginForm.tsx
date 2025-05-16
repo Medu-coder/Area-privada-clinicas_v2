@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { useToast } from '@/hooks/use-toast'
@@ -15,15 +15,22 @@ export function LoginForm() {
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
+  useEffect(() => {
+    console.log('LoginForm: mounted')
+  }, [])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    console.log('LoginForm: attempting sign in', { email })
 
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
+      console.error('LoginForm: sign in error', error)
     } else {
       toast({ title: 'Bienvenido', description: 'Has iniciado sesión correctamente' })
+      console.log('LoginForm: sign in successful', data)
       router.push('/')
     }
 

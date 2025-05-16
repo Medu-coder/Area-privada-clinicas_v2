@@ -4,7 +4,6 @@ import { Calendar, Download, FileText, Bell, Clock, Upload } from "lucide-react"
 import { LogOut } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { AppointmentCard } from "@/components/appointment-card"
 import { TreatmentCard } from "@/components/treatment-card"
 import { ReminderCard } from "@/components/reminder-card"
 import { DocumentCard } from "@/components/document-card"
@@ -56,16 +55,33 @@ interface PatientDashboardProps {
 }
 
 export function PatientDashboard({ patient }: PatientDashboardProps) {
+  console.log('PatientDashboard: render start', patient)
   const router = useRouter()
   const [loadingAuth, setLoadingAuth] = useState(true)
   const [refreshKey, setRefreshKey] = useState(0);
+  const [profile, setProfile] = useState<{ full_name: string; email: string } | null>(null)
 
   useEffect(() => {
+    console.log('PatientDashboard: checking session')
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
+        console.log('PatientDashboard: no active session, redirecting to login')
         router.replace('/login')
       } else {
+        console.log('PatientDashboard: session valid, rendering dashboard')
         setLoadingAuth(false)
+        supabase
+          .from('users')
+          .select('full_name, email')
+          .eq('id', session.user.id)
+          .single()
+          .then(({ data, error }) => {
+            if (error) {
+              console.error('PatientDashboard: error fetching profile', error)
+            } else {
+              setProfile(data)
+            }
+          })
       }
     })
   }, [router])
@@ -75,11 +91,13 @@ export function PatientDashboard({ patient }: PatientDashboardProps) {
   }
 
   const handleLogout = async () => {
+    console.log('PatientDashboard: logging out')
     await supabase.auth.signOut();
     router.replace('/login');
   }
 
   const handleAppointmentCreated = () => {
+    console.log('PatientDashboard: appointment created, triggering refresh')
     setRefreshKey(prev => prev + 1);
   };
 
@@ -88,8 +106,8 @@ export function PatientDashboard({ patient }: PatientDashboardProps) {
       <Card className="border-none shadow-sm bg-white">
         <CardHeader className="pb-4 flex flex-row items-center justify-between">
           <div className="flex-1">
-            <CardTitle className="text-2xl text-berdu-text">Bienvenido/a, {patient.name}</CardTitle>
-            <CardDescription className="text-berdu-text opacity-75">{patient.email}</CardDescription>
+            <CardTitle className="text-2xl text-berdu-text">Bienvenido/a, {profile?.full_name ?? patient.name}</CardTitle>
+            <CardDescription className="text-berdu-text opacity-75">{profile?.email ?? patient.email}</CardDescription>
           </div>
           <Button variant="outline" size="sm" onClick={handleLogout}>
             <LogOut className="mr-2 h-4 w-4" />

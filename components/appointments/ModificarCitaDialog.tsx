@@ -73,10 +73,18 @@ export function ModificarCitaDialog({
     if (!selectedDate || !selectedHour || !reason) return
     setIsSubmitting(true)
 
-    // Liberar hueco antiguo
+    console.log('ModificarCitaDialog: submitting modification', {
+      appointmentId,
+      currentDate,
+      selectedDate,
+      selectedHour,
+      reason,
+    })
+
     const oldDateObj = new Date(currentDate)
     const oldDateStr = format(oldDateObj, 'yyyy-MM-dd')
     const oldHourStr = format(oldDateObj, 'HH:mm')
+    console.log('ModificarCitaDialog: freeing old slot', { oldDateStr, oldHourStr })
     const { error: freeError } = await supabase
       .from('availability')
       .update({ available: true })
@@ -84,8 +92,8 @@ export function ModificarCitaDialog({
       .eq('hour', oldHourStr)
     if (freeError) console.error('Error liberando hueco antiguo:', freeError)
 
-    // Reservar nuevo hueco
     const newDateStr = format(selectedDate, 'yyyy-MM-dd')
+    console.log('ModificarCitaDialog: reserving new slot', { newDateStr, selectedHour })
     const { error: occupyError } = await supabase
       .from('availability')
       .update({ available: false })
@@ -93,18 +101,19 @@ export function ModificarCitaDialog({
       .eq('hour', selectedHour)
     if (occupyError) console.error('Error reservando nuevo hueco:', occupyError)
 
-    // Actualizar cita
     const [h, m] = selectedHour.split(':')
     const newDate = new Date(selectedDate)
     newDate.setHours(parseInt(h, 10), parseInt(m, 10))
+    console.log('ModificarCitaDialog: updating appointment in DB', { appointmentId, date: format(newDate, "yyyy-MM-dd'T'HH:mm:ss"), reason })
     const { error: updateError } = await supabase
       .from('appointments')
-      .update({ date: newDate.toISOString(), reason })
+      .update({ date: format(newDate, "yyyy-MM-dd'T'HH:mm:ss"), reason })
       .eq('id', appointmentId)
     if (updateError) {
       toast({ title: 'Error', description: 'No se pudo modificar la cita', variant: 'destructive' })
     } else {
       toast({ title: 'Cita modificada', description: 'La cita se ha modificado correctamente' })
+      console.log('ModificarCitaDialog: appointment updated successfully', appointmentId)
       setOpen(false)
       onUpdated()
     }

@@ -2,7 +2,6 @@
 
 import { format } from 'date-fns'
 import { ModificarCitaDialog } from './ModificarCitaDialog'
-import { SolicitarCitaDialog } from './SolicitarCitaDialog'
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { supabase } from '@/lib/supabaseClient'
@@ -28,23 +27,29 @@ interface Appointment {
 }
 
 export function AppointmentsList({ onUpdated }: AppointmentsListProps) {
-  const DUMMY_USER_ID = 'd101c6ca-faeb-47dc-bc73-1daf9f5678a5'
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(true)
 
   const fetchAppointments = async () => {
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) {
+      console.error('Error obteniendo usuario:', userError)
+      setLoading(false)
+      return
+    }
+    const userId = user.id
+
     setLoading(true)
 
+    console.log('AppointmentsList: fetchAppointments start for user', userId)
     const { data, error } = await supabase
       .from('appointments')
       .select('*')
-      .eq('user_id', DUMMY_USER_ID)
+      .eq('user_id', userId)
       .in('status', ['pendiente', 'confirmada'])
       .order('date', { ascending: true })
 
-    // Debug logs para inspeccionar la respuesta de Supabase
-    console.log('📥 Cargando citas para:', DUMMY_USER_ID)
-    console.log('📦 Resultado:', { data, error })
+    console.log('AppointmentsList: fetched appointments for user', userId, data, error)
 
     if (error) {
       console.error('Error al obtener citas:', error)
@@ -65,6 +70,8 @@ export function AppointmentsList({ onUpdated }: AppointmentsListProps) {
     const confirm = window.confirm('¿Estás seguro de que quieres cancelar esta cita?')
     if (!confirm) return
 
+    console.log('AppointmentsList: cancelling appointment', appt.id)
+
     const { data: updated, error: updateError } = await supabase
       .from('appointments')
       .update({ status: 'cancelada' })
@@ -76,6 +83,8 @@ export function AppointmentsList({ onUpdated }: AppointmentsListProps) {
       alert('No se pudo cancelar la cita.')
       return
     }
+
+    console.log('AppointmentsList: appointment status set to cancelled, freeing availability slot', appt.id)
 
     const dateObj = new Date(appt.date)
     const dateStr = dateObj.toISOString().split('T')[0]
@@ -90,6 +99,8 @@ export function AppointmentsList({ onUpdated }: AppointmentsListProps) {
     if (availError) {
       console.error('Error al actualizar disponibilidad:', availError)
     }
+
+    console.log('AppointmentsList: availability slot freed', dateStr, hourStr)
 
     setAppointments((prev) => prev.filter((a) => a.id !== appt.id))
     onUpdated?.()
@@ -115,8 +126,8 @@ export function AppointmentsList({ onUpdated }: AppointmentsListProps) {
             <Card key={appt.id}>
               <CardHeader className="flex flex-row items-start justify-between">
                 <div>
-                  <CardTitle>
-                    {format(new Date(appt.date), "EEEE d 'de' MMMM, HH:mm", { locale: es })}
+                  <CardTitle className="text-lg font-medium text-berdu-text">
+                    {format(new Date(appt.date), "EEEE d 'de' MMMM, HH:mm 'h'", { locale: es })}
                   </CardTitle>
                 </div>
                 <DropdownMenu>
@@ -126,7 +137,10 @@ export function AppointmentsList({ onUpdated }: AppointmentsListProps) {
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem asChild>
+                    <DropdownMenuItem
+                      asChild
+                      className="pl-2 text-left w-full"
+                    >
                       <ModificarCitaDialog
                         appointmentId={appt.id}
                         currentDate={appt.date}
@@ -138,7 +152,7 @@ export function AppointmentsList({ onUpdated }: AppointmentsListProps) {
                       />
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      className="text-destructive"
+                      className="pl-2 text-left w-full text-destructive"
                       onSelect={() => handleCancel(appt)}
                     >
                       Cancelar cita
@@ -146,9 +160,9 @@ export function AppointmentsList({ onUpdated }: AppointmentsListProps) {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </CardHeader>
-              <CardContent>
-                <p className="text-sm mb-2">Motivo: {appt.reason}</p>
-                <p className="text-xs text-muted-foreground capitalize">Estado: {appt.status}</p>
+              <CardContent className="pt-0">
+                <p className="text-sm text-berdu-text mb-1">Motivo: {appt.reason}</p>
+                <p className="text-sm text-berdu-secondary capitalize">Estado: {appt.status}</p>
               </CardContent>
             </Card>
           ))}

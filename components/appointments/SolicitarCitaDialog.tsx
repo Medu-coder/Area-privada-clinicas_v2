@@ -20,7 +20,6 @@ export function SolicitarCitaDialog({ onCreated }: { onCreated?: () => void }) {
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
-    // Nueva lógica: solo fechas con al menos una franja disponible
     const fetchAvailableDates = async () => {
       const { data, error } = await supabase
         .from('availability')
@@ -54,7 +53,7 @@ export function SolicitarCitaDialog({ onCreated }: { onCreated?: () => void }) {
 
       if (error) return console.error('Error al cargar horas', error)
 
-      const hours = data.map((d) => d.hour.slice(0, 5)) // transforma "14:00:00" → "14:00"
+      const hours = data.map((d) => d.hour.slice(0, 5))
       const uniqueHours = Array.from(new Set(hours)).sort()
       setAvailableHours(uniqueHours)
     }
@@ -63,21 +62,13 @@ export function SolicitarCitaDialog({ onCreated }: { onCreated?: () => void }) {
   }, [selectedDate])
 
   const handleSubmit = async () => {
-    // Paso 1: Log al entrar en handleSubmit
-    console.log('handleSubmit llamado')
-    console.log('Fecha seleccionada:', selectedDate)
-    console.log('Hora seleccionada:', selectedHour)
-    console.log('Motivo:', reason)
     if (!selectedDate || !selectedHour || !reason) return
 
     setIsSubmitting(true)
+    console.log('SolicitarCitaDialog: submit new appointment', { selectedDate, selectedHour, reason })
 
-    // Dummy user
-    const user = { id: 'd101c6ca-faeb-47dc-bc73-1daf9f5678a5' }
-    
-    // Paso 2: Log después de obtener el usuario
-    console.log('Usuario:', user)
-    if (!user) {
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) {
       toast({ title: 'Error', description: 'Usuario no autenticado', variant: 'destructive' })
       setIsSubmitting(false)
       return
@@ -94,24 +85,24 @@ export function SolicitarCitaDialog({ onCreated }: { onCreated?: () => void }) {
     )
 
     const dateStr = fullDate.toISOString().split('T')[0]
-    const hourStr = selectedHour // ya está en formato "HH:mm"
+    const hourStr = selectedHour
 
-    // Paso 3: Log antes de insertar la cita
-    console.log('Insertando cita con:', {
+    const appointmentDate = format(fullDate, "yyyy-MM-dd'T'HH:mm:ss")
+
+    console.log('SolicitarCitaDialog: inserting appointment with data', {
       user_id: user.id,
-      date: fullDate.toISOString(),
+      date: appointmentDate,
       reason,
       status: 'pendiente',
     })
 
     const { error: insertError } = await supabase.from('appointments').insert({
       user_id: user.id,
-      date: fullDate.toISOString(),
+      date: appointmentDate,
       reason,
       status: 'pendiente',
     })
 
-    // Paso 4: Log después de la inserción
     if (insertError) {
       console.error('Error al insertar cita:', insertError)
       toast({ title: 'Error', description: 'No se pudo registrar la cita', variant: 'destructive' })
@@ -122,8 +113,7 @@ export function SolicitarCitaDialog({ onCreated }: { onCreated?: () => void }) {
         .eq('date', dateStr)
         .eq('hour', hourStr)
 
-      // Paso 5: Log después de actualizar la disponibilidad
-      console.log('Disponibilidad actualizada:', { date: dateStr, hour: hourStr })
+      console.log('SolicitarCitaDialog: availability updated', { dateStr, hourStr })
 
       toast({ title: 'Cita registrada', description: 'La cita se registró correctamente' })
       setOpen(false)
