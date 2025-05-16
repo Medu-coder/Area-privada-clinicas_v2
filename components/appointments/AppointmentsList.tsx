@@ -15,6 +15,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
+
+interface AppointmentsListProps {
+  onUpdated?: () => void
+}
+
 interface Appointment {
   id: string
   date: string
@@ -22,7 +27,7 @@ interface Appointment {
   status: string
 }
 
-export function AppointmentsList() {
+export function AppointmentsList({ onUpdated }: AppointmentsListProps) {
   const DUMMY_USER_ID = 'd101c6ca-faeb-47dc-bc73-1daf9f5678a5'
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(true)
@@ -87,6 +92,7 @@ export function AppointmentsList() {
     }
 
     setAppointments((prev) => prev.filter((a) => a.id !== appt.id))
+    onUpdated?.()
   }
 
   if (loading) {
@@ -125,7 +131,10 @@ export function AppointmentsList() {
                         appointmentId={appt.id}
                         currentDate={appt.date}
                         currentReason={appt.reason}
-                        onUpdated={() => setAppointments((prev) => prev.filter((a) => a.id !== appt.id))}
+                        onUpdated={() => {
+                          setAppointments((prev) => prev.filter((a) => a.id !== appt.id))
+                          onUpdated?.()
+                        }}
                       />
                     </DropdownMenuItem>
                     <DropdownMenuItem

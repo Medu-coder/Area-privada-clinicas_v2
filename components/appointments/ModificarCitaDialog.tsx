@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Calendar } from '@/components/ui/calendar'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
@@ -16,135 +16,155 @@ interface ModificarCitaDialogProps {
   onUpdated: () => void
 }
 
-export function ModificarCitaDialog({ appointmentId, currentDate, currentReason, onUpdated }: ModificarCitaDialogProps) {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date(currentDate))
-  const [selectedHour, setSelectedHour] = useState<string | undefined>()
-  const [reason, setReason] = useState(currentReason)
-  const [availableHours, setAvailableHours] = useState<string[]>([])
+export function ModificarCitaDialog({
+  appointmentId,
+  currentDate,
+  currentReason,
+  onUpdated,
+}: ModificarCitaDialogProps) {
   const [open, setOpen] = useState(false)
-  const [availableDatesStr, setAvailableDatesStr] = useState<string[]>([])
+  const [selectedDate, setSelectedDate] = useState<Date>()
+  const [availableDates, setAvailableDates] = useState<string[]>([])
+  const [availableHours, setAvailableHours] = useState<string[]>([])
+  const [selectedHour, setSelectedHour] = useState<string>()
+  const [reason, setReason] = useState<string>(currentReason)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
-
-  const loadAvailability = async (date: Date) => {
-    const start = new Date(date)
-    start.setHours(0, 0, 0, 0)
-    const end = new Date(start)
-    end.setHours(23, 59, 59, 999)
-
-    const { data, error } = await supabase
-      .from('availability')
-      .select('hour')
-      .eq('available', true)
-      .gte('date', start.toISOString())
-      .lte('date', end.toISOString())
-
-    if (!error && data) {
-      setAvailableHours(data.map((d) => d.hour))
-    } else {
-      toast({ title: 'Error al cargar disponibilidad', variant: 'destructive' })
-    }
-  }
 
   const fetchAvailableDates = async () => {
     const { data, error } = await supabase
       .from('availability')
       .select('date')
       .eq('available', true)
-
     if (error) {
       console.error('Error al cargar fechas disponibles:', error)
       return
     }
-
     const uniqueDates = Array.from(new Set(data.map((d) => d.date.split('T')[0])))
-    setAvailableDatesStr(uniqueDates)
+    setAvailableDates(uniqueDates)
   }
 
-  const handleOpen = () => {
-    setOpen(true)
-    fetchAvailableDates()
-    if (selectedDate) loadAvailability(selectedDate)
+  const loadAvailability = async (date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd')
+    const { data, error } = await supabase
+      .from('availability')
+      .select('hour')
+      .eq('available', true)
+      .eq('date', dateStr)
+    if (error) {
+      console.error('Error al cargar horas disponibles:', error)
+      return
+    }
+    const hours = data.map((d) => d.hour.slice(0, 5))
+    setAvailableHours(Array.from(new Set(hours)).sort())
   }
+
+  useEffect(() => {
+    if (!open) return
+    const current = new Date(currentDate)
+    setSelectedDate(current)
+    setSelectedHour(current.toTimeString().slice(0, 5))
+    setReason(currentReason)
+    fetchAvailableDates()
+    loadAvailability(current)
+  }, [open])
 
   const handleSubmit = async () => {
     if (!selectedDate || !selectedHour || !reason) return
+    setIsSubmitting(true)
 
+    // Liberar hueco antiguo
+    const oldDateObj = new Date(currentDate)
+    const oldDateStr = format(oldDateObj, 'yyyy-MM-dd')
+    const oldHourStr = format(oldDateObj, 'HH:mm')
+    const { error: freeError } = await supabase
+      .from('availability')
+      .update({ available: true })
+      .eq('date', oldDateStr)
+      .eq('hour', oldHourStr)
+    if (freeError) console.error('Error liberando hueco antiguo:', freeError)
+
+    // Reservar nuevo hueco
+    const newDateStr = format(selectedDate, 'yyyy-MM-dd')
+    const { error: occupyError } = await supabase
+      .from('availability')
+      .update({ available: false })
+      .eq('date', newDateStr)
+      .eq('hour', selectedHour)
+    if (occupyError) console.error('Error reservando nuevo hueco:', occupyError)
+
+    // Actualizar cita
+    const [h, m] = selectedHour.split(':')
     const newDate = new Date(selectedDate)
-    const [hour, minute] = selectedHour.split(':')
-    newDate.setHours(parseInt(hour), parseInt(minute))
-
-    const dateStr = newDate.toISOString().split('T')[0]
-    const hourStr = newDate.toTimeString().slice(0, 8)
-
+    newDate.setHours(parseInt(h, 10), parseInt(m, 10))
     const { error: updateError } = await supabase
       .from('appointments')
       .update({ date: newDate.toISOString(), reason })
       .eq('id', appointmentId)
-
     if (updateError) {
-      toast({ title: 'No se pudo modificar la cita', variant: 'destructive' })
-      return
+      toast({ title: 'Error', description: 'No se pudo modificar la cita', variant: 'destructive' })
+    } else {
+      toast({ title: 'Cita modificada', description: 'La cita se ha modificado correctamente' })
+      setOpen(false)
+      onUpdated()
     }
-
-    await supabase
-      .from('availability')
-      .update({ available: false })
-      .eq('date', dateStr)
-      .eq('hour', hourStr)
-
-    toast({ title: 'Cita modificada correctamente' })
-    setOpen(false)
-    onUpdated()
+    setIsSubmitting(false)
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" onClick={handleOpen}>Modificar cita</Button>
+        <Button variant="ghost" onClick={() => setOpen(true)}>
+          Modificar cita
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Modificar cita</DialogTitle>
         </DialogHeader>
-
-        <Calendar
-          selected={selectedDate}
-          onSelect={(date: Date | undefined) => {
-            setSelectedDate(date)
-            if (date) loadAvailability(date)
-          }}
-          disabled={(date) => {
-            const dateStr = date.toISOString().split('T')[0]
-            return !availableDatesStr.includes(dateStr)
-          }}
-        />
-
-        <Select onValueChange={setSelectedHour} defaultValue={selectedHour}>
-          <SelectTrigger>
-            <SelectValue placeholder="Selecciona una hora" />
-          </SelectTrigger>
-          <SelectContent>
-            {availableHours.map((hour) => (
-              <SelectItem key={hour} value={hour}>{hour}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select onValueChange={setReason} defaultValue={reason}>
-          <SelectTrigger>
-            <SelectValue placeholder="Motivo" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Revisión">Revisión</SelectItem>
-            <SelectItem value="Limpieza">Limpieza</SelectItem>
-            <SelectItem value="Odontología">Odontología</SelectItem>
-            <SelectItem value="General">General</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Button className="w-full mt-4" onClick={handleSubmit}>
-          Confirmar cambios
-        </Button>
+        <div className="space-y-4">
+          <Calendar
+            mode="single"
+            selected={selectedDate}
+            onSelect={(date) => {
+              setSelectedDate(date)
+              if (date) loadAvailability(date)
+            }}
+            disabled={(date) => !availableDates.includes(format(date, 'yyyy-MM-dd'))}
+          />
+          {selectedDate && (
+            <Select onValueChange={setSelectedHour} value={selectedHour}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecciona hora" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableHours.map((hour) => (
+                  <SelectItem key={hour} value={hour}>
+                    {hour}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <Select onValueChange={setReason} value={reason}>
+            <SelectTrigger>
+              <SelectValue placeholder="Motivo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Revisión">Revisión</SelectItem>
+              <SelectItem value="Limpieza">Limpieza</SelectItem>
+              <SelectItem value="Odontología">Odontología</SelectItem>
+              <SelectItem value="General">General</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            className="w-full"
+            onClick={handleSubmit}
+            disabled={isSubmitting || !selectedHour || !reason}
+          >
+            Confirmar cambios
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   )

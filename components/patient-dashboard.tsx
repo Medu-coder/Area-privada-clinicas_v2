@@ -76,7 +76,7 @@ export function PatientDashboard({ patient }: PatientDashboardProps) {
           </CardHeader>
           <CardContent className="pb-2">
             <div className="grid gap-4">
-              <AppointmentsList key={refreshKey} />
+              <AppointmentsList key={refreshKey} onUpdated={handleAppointmentCreated} />
             </div>
           </CardContent>
           <CardFooter>

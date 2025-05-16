@@ -64,7 +64,7 @@ export function SolicitarCitaDialog({ onCreated }: { onCreated?: () => void }) {
 
   const handleSubmit = async () => {
     // Paso 1: Log al entrar en handleSubmit
-    console.log('🔍 handleSubmit llamado')
+    console.log('handleSubmit llamado')
     console.log('Fecha seleccionada:', selectedDate)
     console.log('Hora seleccionada:', selectedHour)
     console.log('Motivo:', reason)
@@ -72,7 +72,9 @@ export function SolicitarCitaDialog({ onCreated }: { onCreated?: () => void }) {
 
     setIsSubmitting(true)
 
+    // Dummy user
     const user = { id: 'd101c6ca-faeb-47dc-bc73-1daf9f5678a5' }
+    
     // Paso 2: Log después de obtener el usuario
     console.log('Usuario:', user)
     if (!user) {
@@ -111,7 +113,7 @@ export function SolicitarCitaDialog({ onCreated }: { onCreated?: () => void }) {
 
     // Paso 4: Log después de la inserción
     if (insertError) {
-      console.error('❌ Error al insertar cita:', insertError)
+      console.error('Error al insertar cita:', insertError)
       toast({ title: 'Error', description: 'No se pudo registrar la cita', variant: 'destructive' })
     } else {
       await supabase
@@ -121,7 +123,7 @@ export function SolicitarCitaDialog({ onCreated }: { onCreated?: () => void }) {
         .eq('hour', hourStr)
 
       // Paso 5: Log después de actualizar la disponibilidad
-      console.log('📌 Disponibilidad actualizada:', { date: dateStr, hour: hourStr })
+      console.log('Disponibilidad actualizada:', { date: dateStr, hour: hourStr })
 
       toast({ title: 'Cita registrada', description: 'La cita se registró correctamente' })
       setOpen(false)
