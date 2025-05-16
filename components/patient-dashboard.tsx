@@ -1,6 +1,7 @@
 "use client";
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Calendar, Download, FileText, Bell, Clock, Upload } from "lucide-react"
+import { LogOut } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { AppointmentCard } from "@/components/appointment-card"
@@ -10,6 +11,9 @@ import { DocumentCard } from "@/components/document-card"
 import { InvoiceCard } from "@/components/invoice-card"
 import { SolicitarCitaDialog } from '@/components/appointments/SolicitarCitaDialog'
 import { AppointmentsList } from '@/components/appointments/AppointmentsList'
+
+import { useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabaseClient'
 
 interface Patient {
   name: string
@@ -52,7 +56,28 @@ interface PatientDashboardProps {
 }
 
 export function PatientDashboard({ patient }: PatientDashboardProps) {
+  const router = useRouter()
+  const [loadingAuth, setLoadingAuth] = useState(true)
   const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        router.replace('/login')
+      } else {
+        setLoadingAuth(false)
+      }
+    })
+  }, [router])
+
+  if (loadingAuth) {
+    return null
+  }
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.replace('/login');
+  }
 
   const handleAppointmentCreated = () => {
     setRefreshKey(prev => prev + 1);
@@ -61,9 +86,15 @@ export function PatientDashboard({ patient }: PatientDashboardProps) {
   return (
     <div className="grid gap-6">
       <Card className="border-none shadow-sm bg-white">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-2xl text-berdu-text">Bienvenido/a, {patient.name}</CardTitle>
-          <CardDescription className="text-berdu-text opacity-75">{patient.email}</CardDescription>
+        <CardHeader className="pb-4 flex flex-row items-center justify-between">
+          <div className="flex-1">
+            <CardTitle className="text-2xl text-berdu-text">Bienvenido/a, {patient.name}</CardTitle>
+            <CardDescription className="text-berdu-text opacity-75">{patient.email}</CardDescription>
+          </div>
+          <Button variant="outline" size="sm" onClick={handleLogout}>
+            <LogOut className="mr-2 h-4 w-4" />
+            Cerrar sesión
+          </Button>
         </CardHeader>
       </Card>
 
