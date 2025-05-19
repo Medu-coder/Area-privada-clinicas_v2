@@ -92,3 +92,9 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* React Day Picker custom cell sizing */
+.rdp {
+  --rdp-cell-size: 2.75rem;
+  --rdp-day-spacing: 0.25rem;
+}

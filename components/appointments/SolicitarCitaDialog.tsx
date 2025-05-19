@@ -137,15 +137,17 @@ export function SolicitarCitaDialog({ onCreated }: { onCreated?: () => void }) {
         </DialogHeader>
 
         <div className="space-y-4">
-          <Calendar
-            mode="single"
-            selected={selectedDate}
-            onSelect={setSelectedDate}
-            disabled={(date) => {
-              const formatted = format(date, 'yyyy-MM-dd')
-              return !availableDates.includes(formatted)
-            }}
-          />
+          <div className="w-full max-w-xs mx-auto">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={setSelectedDate}
+              disabled={(date) => {
+                const formatted = format(date, 'yyyy-MM-dd')
+                return !availableDates.includes(formatted)
+              }}
+            />
+          </div>
 
           {selectedDate && (
             <Select onValueChange={setSelectedHour}>

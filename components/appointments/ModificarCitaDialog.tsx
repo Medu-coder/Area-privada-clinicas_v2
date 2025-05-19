@@ -132,15 +132,17 @@ export function ModificarCitaDialog({
           <DialogTitle>Modificar cita</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <Calendar
-            mode="single"
-            selected={selectedDate}
-            onSelect={(date) => {
-              setSelectedDate(date)
-              if (date) loadAvailability(date)
-            }}
-            disabled={(date) => !availableDates.includes(format(date, 'yyyy-MM-dd'))}
-          />
+          <div className="w-full max-w-xs mx-auto">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={(date) => {
+                setSelectedDate(date)
+                if (date) loadAvailability(date)
+              }}
+              disabled={(date) => !availableDates.includes(format(date, 'yyyy-MM-dd'))}
+            />
+          </div>
           {selectedDate && (
             <Select onValueChange={setSelectedHour} value={selectedHour}>
               <SelectTrigger>
