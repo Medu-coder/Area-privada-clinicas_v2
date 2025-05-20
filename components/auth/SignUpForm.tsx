@@ -11,6 +11,7 @@ import {
   CardContent,
   CardFooter,
 } from '@/components/ui/card'
+import { useFormStatus } from '@/hooks/use-form-status'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
@@ -18,12 +19,11 @@ export function SignUpForm() {
   const router = useRouter()
   const { toast } = useToast()
   const supabase = useSupabaseClient()
+  const { isLoading, error, start, setError, stop } = useFormStatus()
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
   const [phoneNumber, setPhoneNumber] = useState('')
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   useEffect(() => {
     console.log('SignUpForm: mounted')
@@ -31,8 +31,7 @@ export function SignUpForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setErrorMessage(null)
-    setIsLoading(true)
+    start()
     console.log('SignUpForm: attempting sign up', { email, fullName })
 
     const { data, error } = await supabase.auth.signUp(
@@ -53,7 +52,7 @@ export function SignUpForm() {
         description: error.message,
         variant: 'destructive',
       })
-      setErrorMessage(error.message)
+      setError(error.message)
       console.error('SignUpForm: sign up error', error)
     } else {
       toast({
@@ -63,7 +62,7 @@ export function SignUpForm() {
       console.log('SignUpForm: sign up successful', data)
       router.push('/login')
     }
-    setIsLoading(false)
+    stop()
   }
 
   return (
@@ -99,9 +98,9 @@ export function SignUpForm() {
               onChange={(e) => setPhoneNumber(e.target.value)}
             />
           </div>
-          {errorMessage && (
+          {error && (
             <p className="text-sm text-red-600">
-              {errorMessage}
+              {error}
             </p>
           )}
           <div>

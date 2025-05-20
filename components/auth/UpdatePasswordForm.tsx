@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSupabaseClient } from '@supabase/auth-helpers-react'
 import { useToast } from '@/hooks/use-toast'
+import { useFormStatus } from '@/hooks/use-form-status'
 import {
   Card,
   CardHeader,
@@ -19,12 +20,11 @@ export function UpdatePasswordForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
+  const { isLoading, error, start, setError, stop } = useFormStatus()
 
   // Tomamos el recovery code del query param
   const recoveryCode = searchParams.get('code') ?? ''
   const [password, setPassword] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isVerifying, setIsVerifying] = useState(true)
 
   useEffect(() => {
@@ -41,18 +41,17 @@ export function UpdatePasswordForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setErrorMessage(null)
-    setIsLoading(true)
+    start()
     // Actualiza la contraseña usando el token que Supabase puso en la cookie
     const { error } = await supabase.auth.updateUser({ password })
     if (error) {
-      setErrorMessage(error.message)
+      setError(error.message)
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
     } else {
       toast({ title: 'Contraseña actualizada', description: 'Ya puedes iniciar sesión con tu nueva contraseña' })
       router.push('/login')
     }
-    setIsLoading(false)
+    stop()
   }
 
   return (
@@ -70,9 +69,9 @@ export function UpdatePasswordForm() {
             minLength={6}
             required
           />
-          {errorMessage && (
+          {error && (
             <p className="text-sm text-red-600">
-              {errorMessage}
+              {error}
             </p>
           )}
         </CardContent>

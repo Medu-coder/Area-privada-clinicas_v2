@@ -8,6 +8,7 @@ import { Calendar } from '@/components/ui/calendar'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { supabase } from '@/lib/supabaseClient'
 import { useToast } from '@/hooks/use-toast'
+import { useFormStatus } from '@/hooks/use-form-status'
 
 export function SolicitarCitaDialog({ onCreated }: { onCreated?: () => void }) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>()
@@ -15,10 +16,9 @@ export function SolicitarCitaDialog({ onCreated }: { onCreated?: () => void }) {
   const [availableHours, setAvailableHours] = useState<string[]>([])
   const [selectedHour, setSelectedHour] = useState<string | undefined>()
   const [reason, setReason] = useState<string | undefined>()
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
+  const { isLoading, error, start, setError, stop } = useFormStatus()
   const [open, setOpen] = useState(false)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchAvailableDates = async () => {
@@ -64,15 +64,14 @@ export function SolicitarCitaDialog({ onCreated }: { onCreated?: () => void }) {
 
   const handleSubmit = async () => {
     if (!selectedDate || !selectedHour || !reason) return
-    setErrorMessage(null)
-    setIsSubmitting(true)
+    start()
     console.log('SolicitarCitaDialog: submit new appointment', { selectedDate, selectedHour, reason })
 
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user) {
-      setErrorMessage('Usuario no autenticado')
+      setError('Usuario no autenticado')
       toast({ title: 'Error', description: 'Usuario no autenticado', variant: 'destructive' })
-      setIsSubmitting(false)
+      stop()
       return
     }
 
@@ -106,9 +105,11 @@ export function SolicitarCitaDialog({ onCreated }: { onCreated?: () => void }) {
     })
 
     if (insertError) {
-      setErrorMessage('No se pudo registrar la cita')
+      setError('No se pudo registrar la cita')
       console.error('Error al insertar cita:', insertError)
       toast({ title: 'Error', description: 'No se pudo registrar la cita', variant: 'destructive' })
+      stop()
+      return
     } else {
       await supabase
         .from('availability')
@@ -120,14 +121,13 @@ export function SolicitarCitaDialog({ onCreated }: { onCreated?: () => void }) {
       // handle errors from this update if desired
 
       toast({ title: 'Cita registrada', description: 'La cita se registró correctamente' })
+      stop()
       setOpen(false)
       setSelectedDate(undefined)
       setSelectedHour(undefined)
       setReason(undefined)
       onCreated?.()
     }
-
-    setIsSubmitting(false)
   }
 
   return (
@@ -141,9 +141,9 @@ export function SolicitarCitaDialog({ onCreated }: { onCreated?: () => void }) {
         </DialogHeader>
 
         <div className="space-y-4">
-          {errorMessage && (
+          {error && (
             <p className="text-sm text-red-600 text-center">
-              {errorMessage}
+              {error}
             </p>
           )}
           <div className="w-full max-w-xs mx-auto">
@@ -185,7 +185,7 @@ export function SolicitarCitaDialog({ onCreated }: { onCreated?: () => void }) {
             </SelectContent>
           </Select>
 
-          <Button onClick={handleSubmit} disabled={isSubmitting || !selectedHour || !reason}>
+          <Button onClick={handleSubmit} disabled={isLoading || !selectedHour || !reason}>
             Confirmar cita
           </Button>
         </div>

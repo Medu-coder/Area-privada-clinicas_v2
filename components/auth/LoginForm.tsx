@@ -1,90 +1,78 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { useSupabaseClient } from '@supabase/auth-helpers-react'
-import { useToast } from '@/hooks/use-toast'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { useFormStatus } from '@/hooks/use-form-status'
 
 export function LoginForm() {
   const router = useRouter()
-  const { toast } = useToast()
   const supabase = useSupabaseClient()
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  useEffect(() => {
-    console.log('LoginForm: mounted')
-  }, [])
+  const { isLoading, error, start, setError, stop } = useFormStatus()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
-    setErrorMessage(null)
-    console.log('LoginForm: attempting sign in', { email })
+    start()
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) {
-      setErrorMessage(error.message)
-      console.error('LoginForm: sign in error', error)
-      setIsLoading(false)
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (signInError) {
+      console.error('LoginForm: sign in error', signInError)
+      setError(signInError.message)
       return
-    } else {
-      toast({ title: 'Bienvenido', description: 'Has iniciado sesión correctamente' })
-      console.log('LoginForm: sign in successful', data)
-      router.push('/')
     }
 
-    setIsLoading(false)
+    stop()
+    router.push('/')
   }
 
   return (
     <Card className="max-w-md mx-auto mt-20">
       <CardHeader>
-        <CardTitle>Iniciar Sesión</CardTitle>
+        <CardTitle>Iniciar sesión</CardTitle>
       </CardHeader>
+
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
-          <div>
-            <Input
-              type="email"
-              placeholder="Correo electrónico"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div>
-            <Input
-              type="password"
-              placeholder="Contraseña"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          {errorMessage && (
+          <Input
+            type="email"
+            placeholder="Correo electrónico"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+
+          <Input
+            type="password"
+            placeholder="Contraseña"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+
+          {error && (
             <p className="text-sm text-red-600">
-              {errorMessage}
+              {error}
             </p>
           )}
         </CardContent>
+
         <CardFooter>
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Cargando...' : 'Entrar'}
+            {isLoading ? 'Entrando…' : 'Entrar'}
           </Button>
         </CardFooter>
       </form>
-      <div className="text-center mt-2">
-        <Link href="/reset-password" className="text-sm underline">
-          ¿Olvidaste tu contraseña?
-        </Link>
-      </div>
     </Card>
   )
 }

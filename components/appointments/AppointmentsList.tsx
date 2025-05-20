@@ -13,7 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-
+import { useFormStatus } from '@/hooks/use-form-status'
 
 interface AppointmentsListProps {
   onUpdated?: () => void
@@ -28,42 +28,39 @@ interface Appointment {
 
 export function AppointmentsList({ onUpdated }: AppointmentsListProps) {
   const [appointments, setAppointments] = useState<Appointment[]>([])
-  const [loading, setLoading] = useState(true)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const { isLoading, error, start, setError, stop } = useFormStatus()
 
   const fetchAppointments = async () => {
-    setErrorMessage(null)
+    start()
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user) {
       console.error('Error obteniendo usuario:', userError)
-      setErrorMessage('Error obteniendo usuario.')
-      setLoading(false)
+      setError('Error obteniendo usuario.')
+      stop()
       return
     }
     const userId = user.id
 
-    setLoading(true)
-
     console.log('AppointmentsList: fetchAppointments start for user', userId)
-    const { data, error } = await supabase
+    const { data, error: fetchError } = await supabase
       .from('appointments')
       .select('*')
       .eq('user_id', userId)
       .in('status', ['pendiente', 'confirmada'])
       .order('date', { ascending: true })
 
-    console.log('AppointmentsList: fetched appointments for user', userId, data, error)
+    console.log('AppointmentsList: fetched appointments for user', userId, data, fetchError)
 
-    if (error) {
-      console.error('Error al obtener citas:', error)
-      setErrorMessage('Error al obtener citas.')
+    if (fetchError) {
+      console.error('Error al obtener citas:', fetchError)
+      setError('Error al obtener citas.')
     }
 
     if (data) {
       setAppointments(data)
     }
 
-    setLoading(false)
+    stop()
   }
 
   useEffect(() => {
@@ -73,6 +70,8 @@ export function AppointmentsList({ onUpdated }: AppointmentsListProps) {
   const handleCancel = async (appt: Appointment) => {
     const confirm = window.confirm('¿Estás seguro de que quieres cancelar esta cita?')
     if (!confirm) return
+
+    start()
 
     console.log('AppointmentsList: cancelling appointment', appt.id)
 
@@ -84,7 +83,8 @@ export function AppointmentsList({ onUpdated }: AppointmentsListProps) {
 
     if (updateError) {
       console.error('Error al cancelar la cita:', updateError)
-      setErrorMessage('No se pudo cancelar la cita.')
+      setError('No se pudo cancelar la cita.')
+      stop()
       return
     }
 
@@ -102,16 +102,17 @@ export function AppointmentsList({ onUpdated }: AppointmentsListProps) {
 
     if (availError) {
       console.error('Error al actualizar disponibilidad:', availError)
-      setErrorMessage('Error al actualizar disponibilidad.')
+      setError('Error al actualizar disponibilidad.')
     }
 
     console.log('AppointmentsList: availability slot freed', dateStr, hourStr)
 
     setAppointments((prev) => prev.filter((a) => a.id !== appt.id))
     onUpdated?.()
+    stop()
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center py-10">
         <Loader2 className="animate-spin w-6 h-6 text-muted-foreground" />
@@ -121,9 +122,9 @@ export function AppointmentsList({ onUpdated }: AppointmentsListProps) {
 
   return (
     <>
-      {errorMessage && (
+      {error && (
         <p className="text-sm text-red-600 text-center py-2">
-          {errorMessage}
+          {error}
         </p>
       )}
       {appointments.length === 0 ? (
