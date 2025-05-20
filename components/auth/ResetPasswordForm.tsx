@@ -14,9 +14,11 @@ export function ResetPasswordForm() {
   const { toast } = useToast()
   const [email, setEmail] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setErrorMessage(null)
     setIsLoading(true)
 
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -25,6 +27,7 @@ export function ResetPasswordForm() {
     //console.log('reset data:', data)
     //console.log('reset error:', error)
     if (error) {
+      setErrorMessage(error.message)
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
     } else {
       toast({ title: 'Correo enviado', description: 'Revisa tu bandeja para restablecer tu contraseña' })
@@ -48,6 +51,11 @@ export function ResetPasswordForm() {
             onChange={(e) => setEmail(e.target.value)}
             required
           />
+          {errorMessage && (
+            <p className="text-sm text-red-600">
+              {errorMessage}
+            </p>
+          )}
         </CardContent>
         <CardFooter>
           <Button type="submit" className="w-full" disabled={isLoading}>

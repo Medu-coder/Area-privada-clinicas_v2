@@ -23,6 +23,7 @@ export function SignUpForm() {
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [phoneNumber, setPhoneNumber] = useState('')
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   useEffect(() => {
     console.log('SignUpForm: mounted')
@@ -30,6 +31,7 @@ export function SignUpForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setErrorMessage(null)
     setIsLoading(true)
     console.log('SignUpForm: attempting sign up', { email, fullName })
 
@@ -51,6 +53,7 @@ export function SignUpForm() {
         description: error.message,
         variant: 'destructive',
       })
+      setErrorMessage(error.message)
       console.error('SignUpForm: sign up error', error)
     } else {
       toast({
@@ -96,6 +99,11 @@ export function SignUpForm() {
               onChange={(e) => setPhoneNumber(e.target.value)}
             />
           </div>
+          {errorMessage && (
+            <p className="text-sm text-red-600">
+              {errorMessage}
+            </p>
+          )}
           <div>
             <Input
               type="password"

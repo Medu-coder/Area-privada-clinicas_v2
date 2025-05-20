@@ -16,6 +16,7 @@ export function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   useEffect(() => {
     console.log('LoginForm: mounted')
@@ -24,12 +25,15 @@ export function LoginForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setErrorMessage(null)
     console.log('LoginForm: attempting sign in', { email })
 
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+      setErrorMessage(error.message)
       console.error('LoginForm: sign in error', error)
+      setIsLoading(false)
+      return
     } else {
       toast({ title: 'Bienvenido', description: 'Has iniciado sesión correctamente' })
       console.log('LoginForm: sign in successful', data)
@@ -64,6 +68,11 @@ export function LoginForm() {
               required
             />
           </div>
+          {errorMessage && (
+            <p className="text-sm text-red-600">
+              {errorMessage}
+            </p>
+          )}
         </CardContent>
         <CardFooter>
           <Button type="submit" className="w-full" disabled={isLoading}>

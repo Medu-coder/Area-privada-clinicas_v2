@@ -29,6 +29,7 @@ export function ModificarCitaDialog({
   const [selectedHour, setSelectedHour] = useState<string>()
   const [reason, setReason] = useState<string>(currentReason)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const { toast } = useToast()
 
   const fetchAvailableDates = async () => {
@@ -71,6 +72,7 @@ export function ModificarCitaDialog({
 
   const handleSubmit = async () => {
     if (!selectedDate || !selectedHour || !reason) return
+    setErrorMessage(null)
     setIsSubmitting(true)
 
     console.log('ModificarCitaDialog: submitting modification', {
@@ -90,7 +92,10 @@ export function ModificarCitaDialog({
       .update({ available: true })
       .eq('date', oldDateStr)
       .eq('hour', oldHourStr)
-    if (freeError) console.error('Error liberando hueco antiguo:', freeError)
+    if (freeError) {
+      console.error('Error liberando hueco antiguo:', freeError)
+      setErrorMessage('Error liberando el hueco antiguo.')
+    }
 
     const newDateStr = format(selectedDate, 'yyyy-MM-dd')
     console.log('ModificarCitaDialog: reserving new slot', { newDateStr, selectedHour })
@@ -99,7 +104,16 @@ export function ModificarCitaDialog({
       .update({ available: false })
       .eq('date', newDateStr)
       .eq('hour', selectedHour)
-    if (occupyError) console.error('Error reservando nuevo hueco:', occupyError)
+    if (occupyError) {
+      console.error('Error reservando nuevo hueco:', occupyError)
+      setErrorMessage('Error reservando el nuevo hueco.')
+    }
+
+    // If there was an error in either freeing or reserving, don't proceed
+    if (freeError || occupyError) {
+      setIsSubmitting(false)
+      return
+    }
 
     const [h, m] = selectedHour.split(':')
     const newDate = new Date(selectedDate)
@@ -110,6 +124,7 @@ export function ModificarCitaDialog({
       .update({ date: format(newDate, "yyyy-MM-dd'T'HH:mm:ss"), reason })
       .eq('id', appointmentId)
     if (updateError) {
+      setErrorMessage('No se pudo modificar la cita.')
       toast({ title: 'Error', description: 'No se pudo modificar la cita', variant: 'destructive' })
     } else {
       toast({ title: 'Cita modificada', description: 'La cita se ha modificado correctamente' })
@@ -132,6 +147,11 @@ export function ModificarCitaDialog({
           <DialogTitle>Modificar cita</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
+          {errorMessage && (
+            <p className="text-sm text-red-600 text-center">
+              {errorMessage}
+            </p>
+          )}
           <div className="w-full max-w-xs mx-auto">
             <Calendar
               mode="single"

@@ -18,6 +18,7 @@ export function SolicitarCitaDialog({ onCreated }: { onCreated?: () => void }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
   const [open, setOpen] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchAvailableDates = async () => {
@@ -63,12 +64,13 @@ export function SolicitarCitaDialog({ onCreated }: { onCreated?: () => void }) {
 
   const handleSubmit = async () => {
     if (!selectedDate || !selectedHour || !reason) return
-
+    setErrorMessage(null)
     setIsSubmitting(true)
     console.log('SolicitarCitaDialog: submit new appointment', { selectedDate, selectedHour, reason })
 
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user) {
+      setErrorMessage('Usuario no autenticado')
       toast({ title: 'Error', description: 'Usuario no autenticado', variant: 'destructive' })
       setIsSubmitting(false)
       return
@@ -104,6 +106,7 @@ export function SolicitarCitaDialog({ onCreated }: { onCreated?: () => void }) {
     })
 
     if (insertError) {
+      setErrorMessage('No se pudo registrar la cita')
       console.error('Error al insertar cita:', insertError)
       toast({ title: 'Error', description: 'No se pudo registrar la cita', variant: 'destructive' })
     } else {
@@ -114,6 +117,7 @@ export function SolicitarCitaDialog({ onCreated }: { onCreated?: () => void }) {
         .eq('hour', hourStr)
 
       console.log('SolicitarCitaDialog: availability updated', { dateStr, hourStr })
+      // handle errors from this update if desired
 
       toast({ title: 'Cita registrada', description: 'La cita se registró correctamente' })
       setOpen(false)
@@ -137,6 +141,11 @@ export function SolicitarCitaDialog({ onCreated }: { onCreated?: () => void }) {
         </DialogHeader>
 
         <div className="space-y-4">
+          {errorMessage && (
+            <p className="text-sm text-red-600 text-center">
+              {errorMessage}
+            </p>
+          )}
           <div className="w-full max-w-xs mx-auto">
             <Calendar
               mode="single"

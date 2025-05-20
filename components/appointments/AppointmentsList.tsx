@@ -29,11 +29,14 @@ interface Appointment {
 export function AppointmentsList({ onUpdated }: AppointmentsListProps) {
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(true)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const fetchAppointments = async () => {
+    setErrorMessage(null)
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user) {
       console.error('Error obteniendo usuario:', userError)
+      setErrorMessage('Error obteniendo usuario.')
       setLoading(false)
       return
     }
@@ -53,6 +56,7 @@ export function AppointmentsList({ onUpdated }: AppointmentsListProps) {
 
     if (error) {
       console.error('Error al obtener citas:', error)
+      setErrorMessage('Error al obtener citas.')
     }
 
     if (data) {
@@ -80,7 +84,7 @@ export function AppointmentsList({ onUpdated }: AppointmentsListProps) {
 
     if (updateError) {
       console.error('Error al cancelar la cita:', updateError)
-      alert('No se pudo cancelar la cita.')
+      setErrorMessage('No se pudo cancelar la cita.')
       return
     }
 
@@ -98,6 +102,7 @@ export function AppointmentsList({ onUpdated }: AppointmentsListProps) {
 
     if (availError) {
       console.error('Error al actualizar disponibilidad:', availError)
+      setErrorMessage('Error al actualizar disponibilidad.')
     }
 
     console.log('AppointmentsList: availability slot freed', dateStr, hourStr)
@@ -116,6 +121,11 @@ export function AppointmentsList({ onUpdated }: AppointmentsListProps) {
 
   return (
     <>
+      {errorMessage && (
+        <p className="text-sm text-red-600 text-center py-2">
+          {errorMessage}
+        </p>
+      )}
       {appointments.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center">
           No tienes citas activas.

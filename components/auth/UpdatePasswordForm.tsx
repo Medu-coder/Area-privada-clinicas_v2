@@ -24,6 +24,7 @@ export function UpdatePasswordForm() {
   const recoveryCode = searchParams.get('code') ?? ''
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isVerifying, setIsVerifying] = useState(true)
 
   useEffect(() => {
@@ -40,10 +41,12 @@ export function UpdatePasswordForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setErrorMessage(null)
     setIsLoading(true)
     // Actualiza la contraseña usando el token que Supabase puso en la cookie
     const { error } = await supabase.auth.updateUser({ password })
     if (error) {
+      setErrorMessage(error.message)
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
     } else {
       toast({ title: 'Contraseña actualizada', description: 'Ya puedes iniciar sesión con tu nueva contraseña' })
@@ -67,6 +70,11 @@ export function UpdatePasswordForm() {
             minLength={6}
             required
           />
+          {errorMessage && (
+            <p className="text-sm text-red-600">
+              {errorMessage}
+            </p>
+          )}
         </CardContent>
         <CardFooter>
           <Button type="submit" className="w-full" disabled={isLoading}>
