@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabaseClient'
+import Link from 'next/link'
+import { useSupabaseClient } from '@supabase/auth-helpers-react'
 import { useToast } from '@/hooks/use-toast'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -11,6 +12,7 @@ import { Button } from '@/components/ui/button'
 export function LoginForm() {
   const router = useRouter()
   const { toast } = useToast()
+  const supabase = useSupabaseClient()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -69,6 +71,11 @@ export function LoginForm() {
           </Button>
         </CardFooter>
       </form>
+      <div className="text-center mt-2">
+        <Link href="/reset-password" className="text-sm underline">
+          ¿Olvidaste tu contraseña?
+        </Link>
+      </div>
     </Card>
   )
 }

@@ -18,6 +18,8 @@ export default async function middleware(request: NextRequest) {
   const isPublicPath =
     pathname === '/login' ||
     pathname === '/signup' ||
+    pathname === '/reset-password' ||
+    pathname === '/update-password' ||
     pathname.startsWith('/api') ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/_static') ||
