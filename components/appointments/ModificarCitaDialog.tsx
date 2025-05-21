@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabaseClient'
+import { supabaseBrowser } from '@/lib/supabase-browser'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Calendar } from '@/components/ui/calendar'
@@ -31,6 +31,8 @@ export function ModificarCitaDialog({
   const [reason, setReason] = useState<string>(currentReason)
   const { toast } = useToast()
   const { isLoading, error, start, setError, stop } = useFormStatus()
+
+  const supabase = supabaseBrowser
 
   const fetchAvailableDates = async () => {
     const { data, error } = await supabase

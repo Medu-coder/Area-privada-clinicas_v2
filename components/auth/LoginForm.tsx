@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useSupabaseClient } from '@supabase/auth-helpers-react'
+import { supabaseBrowser } from '@/lib/supabase-browser'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -10,8 +10,8 @@ import { useFormStatus } from '@/hooks/use-form-status'
 
 export function LoginForm() {
   const router = useRouter()
-  const supabase = useSupabaseClient()
-
+  const supabase = supabaseBrowser
+  
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 

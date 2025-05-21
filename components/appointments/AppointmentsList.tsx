@@ -4,7 +4,7 @@ import { format } from 'date-fns'
 import { ModificarCitaDialog } from './ModificarCitaDialog'
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { supabase } from '@/lib/supabaseClient'
+import { supabaseBrowser } from '@/lib/supabase-browser'
 import { Loader2, MoreVertical } from 'lucide-react'
 import { es } from 'date-fns/locale'
 import {
@@ -32,7 +32,7 @@ export function AppointmentsList({ onUpdated }: AppointmentsListProps) {
 
   const fetchAppointments = async () => {
     start()
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    const { data: { user }, error: userError } = await supabaseBrowser.auth.getUser()
     if (userError || !user) {
       console.error('Error obteniendo usuario:', userError)
       setError('Error obteniendo usuario.')
@@ -42,7 +42,7 @@ export function AppointmentsList({ onUpdated }: AppointmentsListProps) {
     const userId = user.id
 
     console.log('AppointmentsList: fetchAppointments start for user', userId)
-    const { data, error: fetchError } = await supabase
+    const { data, error: fetchError } = await supabaseBrowser
       .from('appointments')
       .select('*')
       .eq('user_id', userId)
@@ -75,7 +75,7 @@ export function AppointmentsList({ onUpdated }: AppointmentsListProps) {
 
     console.log('AppointmentsList: cancelling appointment', appt.id)
 
-    const { data: updated, error: updateError } = await supabase
+    const { data: updated, error: updateError } = await supabaseBrowser
       .from('appointments')
       .update({ status: 'cancelada' })
       .eq('id', appt.id)
@@ -94,7 +94,7 @@ export function AppointmentsList({ onUpdated }: AppointmentsListProps) {
     const dateStr = dateObj.toISOString().split('T')[0]
     const hourStr = dateObj.toTimeString().slice(0, 8)
 
-    const { error: availError } = await supabase
+    const { error: availError } = await supabaseBrowser
       .from('availability')
       .update({ available: true })
       .eq('date', dateStr)

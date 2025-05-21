@@ -12,7 +12,7 @@ import { SolicitarCitaDialog } from '@/components/appointments/SolicitarCitaDial
 import { AppointmentsList } from '@/components/appointments/AppointmentsList'
 
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabaseClient'
+import { supabaseBrowser } from '@/lib/supabase-browser'
 
 interface Patient {
   name: string
@@ -60,6 +60,7 @@ export function PatientDashboard({ patient }: PatientDashboardProps) {
   const [loadingAuth, setLoadingAuth] = useState(true)
   const [refreshKey, setRefreshKey] = useState(0);
   const [profile, setProfile] = useState<{ full_name: string; email: string } | null>(null)
+  const supabase = supabaseBrowser
 
   useEffect(() => {
     console.log('PatientDashboard: checking session')

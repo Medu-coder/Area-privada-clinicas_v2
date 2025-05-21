@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
-import { supabase } from '@/lib/supabaseClient'
+import { supabaseBrowser } from '@/lib/supabase-browser'
 import { useToast } from '@/hooks/use-toast'
 import { useFormStatus } from '@/hooks/use-form-status'
 
@@ -19,7 +19,8 @@ export function SolicitarCitaDialog({ onCreated }: { onCreated?: () => void }) {
   const { toast } = useToast()
   const { isLoading, error, start, setError, stop } = useFormStatus()
   const [open, setOpen] = useState(false)
-
+  const supabase = supabaseBrowser
+  
   useEffect(() => {
     const fetchAvailableDates = async () => {
       const { data, error } = await supabase

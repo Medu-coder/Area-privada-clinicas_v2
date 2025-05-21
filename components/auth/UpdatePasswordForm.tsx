@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useSupabaseClient } from '@supabase/auth-helpers-react'
+import { supabaseBrowser } from '@/lib/supabase-browser'
 import { useToast } from '@/hooks/use-toast'
 import { useFormStatus } from '@/hooks/use-form-status'
 import {
@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
 export function UpdatePasswordForm() {
-  const supabase = useSupabaseClient()
+  const supabase = supabaseBrowser
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()

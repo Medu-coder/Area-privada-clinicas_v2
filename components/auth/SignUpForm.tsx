@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/hooks/use-toast'
-import { useSupabaseClient } from '@supabase/auth-helpers-react'
+import { supabaseBrowser } from '@/lib/supabase-browser'
 import {
   Card,
   CardHeader,
@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button'
 export function SignUpForm() {
   const router = useRouter()
   const { toast } = useToast()
-  const supabase = useSupabaseClient()
+  const supabase = supabaseBrowser
   const { isLoading, error, start, setError, stop } = useFormStatus()
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')

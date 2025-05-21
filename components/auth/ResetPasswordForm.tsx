@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useSupabaseClient } from '@supabase/auth-helpers-react'
+import { supabaseBrowser } from '@/lib/supabase-browser'
 import { useToast } from '@/hooks/use-toast'
 import { useFormStatus } from '@/hooks/use-form-status'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
 export function ResetPasswordForm() {
-  const supabase = useSupabaseClient()
+  const supabase = supabaseBrowser
   const router = useRouter()
   const { toast } = useToast()
   const { isLoading, error, start, setError, stop } = useFormStatus()
